@@ -106,10 +106,23 @@ SQLiteStatement& SQLiteStatement::bindNull(const std::string& name)
 }
 
 SQLite::SQLite(const std::string& path)
-	: mIsOpen(false)
-	, mHandle(nullptr)
+	: mHandle(nullptr)
+	, mErrorCode(SQLiteCode::CANTOPEN)
 {
+	mErrorCode = static_cast<SQLiteCode::Enum>(sqlite3_open(path.c_str(), &mHandle));
+}
+
+SQLite::~SQLite()
+{
+	if(mHandle != nullptr){ sqlite3_close(mHandle); }
+}
+
+bool SQLite::isOpen() const noexcept
+{ return mErrorCode == SQLiteCode::OK; }
 
 }
+
+SQLiteStmt_sptr SQLite::prepare(const std::string& statement)
+{
 
 }

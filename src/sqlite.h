@@ -40,17 +40,17 @@ namespace database
 
 	class SQLite
 	{
-	private:
-		bool mIsOpen;
 	public:
 		SQLite(const std::string& path);
+		virtual ~SQLite();
 		//checkers
-		inline bool isOpen() const noexcept 	{ return mIsOpen; }
+		bool isOpen() const noexcept;
 		explicit operator bool() const noexcept { return isOpen(); }
 		//members functions
 		SQLiteStmt_sptr prepare(const std::string& statement);
 	private:
 		sqlite3 * mHandle;
+		SQLiteCode::Enum mErrorCode;
 	};
 }
 
