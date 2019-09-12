@@ -105,12 +105,16 @@ SQLiteStatement& SQLiteStatement::bindNull(const std::string& name)
 	return *this; 
 }
 
+bool SQLiteStatement::step()
+{
+	auto error_code = sqlite3_step(mStatement);
+	//sqlite3_reset();
+}
+
 SQLite::SQLite(const std::string& path)
 	: mHandle(nullptr)
-	, mErrorCode(SQLiteCode::CANTOPEN)
-{
-	mErrorCode = static_cast<SQLiteCode::Enum>(sqlite3_open(path.c_str(), &mHandle));
-}
+	, mErrorCode(static_cast<SQLiteCode::Enum>(sqlite3_open(path.c_str(), &mHandle)))
+{}
 
 SQLite::~SQLite()
 {
@@ -120,9 +124,15 @@ SQLite::~SQLite()
 bool SQLite::isOpen() const noexcept
 { return mErrorCode == SQLiteCode::OK; }
 
-}
-
 SQLiteStmt_sptr SQLite::prepare(const std::string& statement)
 {
+	if(mHandle)
+	{
+		sqlite3_stmt* stmt = nullptr;
+		auto error_code = static_cast<SQLiteCode::Enum>(sqlite3_prepare_v2(mHandle, statement.c_str(), statement.size()+1, &stmt, nullptr));
+		return std::make_shared<SQLiteStatement>(error_code, (mErrorCode == SQLiteCode::OK) ? stmt : nullptr);
+	}
+	return nullptr;
+}
 
 }

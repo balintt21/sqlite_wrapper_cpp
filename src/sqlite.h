@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <functional>
 #include "sqlite_error_code.h"
 //pre-declarations
 struct sqlite3;
@@ -35,6 +36,8 @@ namespace database
 		SQLiteStatement& bind(int64_t value, const std::string& name);
 		SQLiteStatement& bind(const std::string& value, const std::string& name);
 		SQLiteStatement& bindNull(const std::string& name);
+
+		bool step();
 	};
 	using SQLiteStmt_sptr = std::shared_ptr<SQLiteStatement>;
 
@@ -47,10 +50,18 @@ namespace database
 		bool isOpen() const noexcept;
 		explicit operator bool() const noexcept { return isOpen(); }
 		//members functions
+		/**
+		 *
+		 */
 		SQLiteStmt_sptr prepare(const std::string& statement);
+		/**
+		 *
+		 */
+		bool exec(const std::string& statement, const std::function<void (int32_t, char**, char**)>& yield_row);
+		
 	private:
 		sqlite3 * mHandle;
-		SQLiteCode::Enum mErrorCode;
+		const SQLiteCode::Enum mErrorCode;
 	};
 }
 
