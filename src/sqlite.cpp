@@ -1,5 +1,5 @@
 #include "sqlite.h"
-#include "third_party/sqlite3.h"
+#include <sqlite3.h>
 
 namespace database
 {
