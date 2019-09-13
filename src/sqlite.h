@@ -15,13 +15,29 @@ namespace database
 	class SQLiteStatement;
 	using SQLiteStmt_sptr = std::shared_ptr<SQLiteStatement>;
 
+	class SQLiteColumn
+	{
+		SQLiteStmt_sptr mStatement;
+		int32_t			mCol;
+	public:
+		SQLiteColumn(const SQLiteStmt_sptr& stmt, int32_t col);
+		bool valid() const noexcept;
+		explicit operator bool() const noexcept { return valid(); }
+		double asDouble();
+		int32_t asInt();
+		int64_t asInt64();
+		std::string asString();
+		std::wstring asWString();//unsupported
+	};
+
 	class SQLiteRow
 	{
 		SQLiteStmt_sptr mStatement;
+		SQLiteColumn	mColumn;
 	public:
 		SQLiteRow(const SQLiteStmt_sptr& stmt);
+		SQLiteColumn& operator[]( const size_t index ) noexcept;
 	};
-	using SQLiteRow_sptr = std::shared_ptr<SQLiteRow>;
 
 	class SQLiteStatement : public std::enable_shared_from_this<SQLiteStatement>
 	{

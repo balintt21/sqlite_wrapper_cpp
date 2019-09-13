@@ -4,9 +4,46 @@
 namespace database
 {
 
+SQLiteColumn::SQLiteColumn(const SQLiteStmt_sptr& stmt, int32_t col) : mStatement(stmt), mCol(col) {}
+
+bool SQLiteColumn::valid() const noexcept { return (mStatement != nullptr) && (mCol > 0); }
+
+double SQLiteColumn::asDouble() 
+{ 
+	return sqlite3_column_double(mStatement->native(), mCol); 
+}
+
+int32_t SQLiteColumn::asInt() 
+{ 
+	return sqlite3_column_int(mStatement->native(), mCol); 
+}
+
+int64_t SQLiteColumn::asInt64() 
+{ 
+	return sqlite3_column_int64(mStatement->native(), mCol); 
+}
+
+std::string SQLiteColumn::asString() 
+{ 
+	const uint8_t* data = sqlite3_column_text(mStatement->native(), mCol);
+	return std::string(reinterpret_cast<const char*>(data)); 
+}
+
+std::wstring SQLiteColumn::asWString() 
+{ 
+	return L"unsupported"; 
+}
+
 SQLiteRow::SQLiteRow(const SQLiteStmt_sptr& stmt) 
 	: mStatement(stmt)
+	, mColumn(nullptr, 0)
 {}
+
+SQLiteColumn& SQLiteRow::operator[]( const size_t index ) noexcept
+{
+	mColumn = SQLiteColumn(mStatement, index);
+	return mColumn;
+}
 
 SQLiteStatement::SQLiteStatement(int error_code, sqlite3_stmt* stmt)
 	: mErrorCode(static_cast<SQLiteCode::Enum>(error_code))
