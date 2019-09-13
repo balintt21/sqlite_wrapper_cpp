@@ -70,7 +70,8 @@ std::optional<SQLiteRow> SQLiteStatement::step()
 {
 	if(mIsEvaluated) 
 	{ 
-		sqlite3_reset(mStatement); 
+		sqlite3_reset(mStatement);
+		sqlite3_clear_bindings(mStatement);
 		mNextIndex = 1;
 	}
 	auto error_code = static_cast<SQLiteCode::Enum>(sqlite3_step(mStatement));
@@ -182,7 +183,7 @@ SQLite::SQLite(const std::string& path)
 
 SQLite::~SQLite()
 {
-	if(mHandle != nullptr){ sqlite3_close(mHandle); }
+	if(mHandle != nullptr){ sqlite3_close_v2(mHandle); }
 }
 
 bool SQLite::isOpen() const noexcept
