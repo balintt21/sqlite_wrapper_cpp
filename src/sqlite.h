@@ -52,7 +52,8 @@ namespace database
 		static SQLiteStmt_sptr makeShared(int error_code, sqlite3_stmt* stmt);
 		~SQLiteStatement();
 		inline SQLiteCode::Enum errorCode() const { return mErrorCode; }
-		explicit operator bool() const noexcept { return errorCode() == SQLiteCode::OK; }
+		inline bool valid() const { return errorCode() == SQLiteCode::OK; }
+		explicit operator bool() const noexcept { return valid(); }
 		sqlite3_stmt* native() const; 
 		/**
 		 * Evaluates statement by one row
@@ -95,15 +96,31 @@ namespace database
 		//members functions
 		/**
 		 * Prepare an sql statement for further use
-		 * @return On success a valid SQLiteStmt_sptr is returned, otherwise a nullptr
+		 * @return On success a valid SQLiteStatement is returned, otherwise an invalid SQliteStatement containing a proper error code
 		 */
 		SQLiteStmt_sptr prepare(const std::string& statement);
 		/**
 		 * Executes the given statement
 		 * Good for action statements without fetchable result
-		 * @return 
+		 * @return An SQLiteCode is returned
 		 */
 		SQLiteCode::Enum execute(const std::string& statement);
+		//higher level functions
+		/**
+		 * List table names
+		 */
+		std::vector<std::string> listTables();
+		/**
+		 * Describe table
+		 * return An sql string is returned on success as description, otherwise an empty string
+		 */
+		std::string	describeTable(const std::string& table_name);
+		/**
+		 * Drop table
+		 * @return An SQLiteCode is returned
+		 */	 
+		SQLiteCode::Enum dropTable(const std::string& table_name);
+
 		
 	private:
 		sqlite3 * mHandle;

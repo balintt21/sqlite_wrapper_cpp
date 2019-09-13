@@ -190,28 +190,64 @@ bool SQLite::isOpen() const noexcept
 
 SQLiteStmt_sptr SQLite::prepare(const std::string& statement)
 {
+	SQLiteCode::Enum error_code = SQLiteCode::CANTOPEN;
+	sqlite3_stmt* stmt = nullptr;
 	if(mHandle)
 	{
-		sqlite3_stmt* stmt = nullptr;
-		auto error_code = static_cast<SQLiteCode::Enum>(sqlite3_prepare_v2(mHandle, statement.c_str(), statement.size()+1, &stmt, nullptr));
-		return SQLiteStatement::makeShared(error_code, (mErrorCode == SQLiteCode::OK) ? stmt : nullptr);
+		error_code = static_cast<SQLiteCode::Enum>(sqlite3_prepare_v2(mHandle, statement.c_str(), statement.size()+1, &stmt, nullptr));
 	}
-	return nullptr;
+	return SQLiteStatement::makeShared(error_code, (error_code == SQLiteCode::OK) ? stmt : nullptr);
 }
 
 SQLiteCode::Enum SQLite::execute(const std::string& statement)
 {
-	sqlite3_stmt* stmt = nullptr;
-	auto error_code = static_cast<SQLiteCode::Enum>(sqlite3_prepare_v2(mHandle, statement.c_str(), statement.size()+1, &stmt, nullptr));
-	if(error_code == SQLiteCode::OK)
+	SQLiteCode::Enum error_code = SQLiteCode::CANTOPEN;
+	if(mHandle)
 	{
-		error_code = static_cast<SQLiteCode::Enum>(sqlite3_step(stmt));
-	}
+		sqlite3_stmt* stmt = nullptr;
+		error_code = static_cast<SQLiteCode::Enum>(sqlite3_prepare_v2(mHandle, statement.c_str(), statement.size()+1, &stmt, nullptr));
+		if(error_code == SQLiteCode::OK)
+		{
+			error_code = static_cast<SQLiteCode::Enum>(sqlite3_step(stmt));
+		}
 
-	if(stmt != nullptr)
-	{ sqlite3_finalize(stmt); }
-	
+		if(stmt != nullptr)
+		{ sqlite3_finalize(stmt); }
+	}
 	return error_code;
+}
+
+std::vector<std::string> SQLite::listTables()
+{
+	std::vector<std::string> result;
+	auto stmt = prepare("SELECT `name` FROM `sqlite_master` WHERE type = 'table' AND `name` NOT LIKE 'sqlite_%'");
+	if(*stmt)
+    {
+        while(auto opt = stmt->evaluateByRow())
+        {
+            result.emplace_back(opt.value()[0].asString());
+        }
+    }
+	return result;
+}
+
+std::string	SQLite::describeTable(const std::string& table_name)
+{
+	std::string result;
+	auto stmt = prepare("SELECT `sql` FROM `sqlite_master` WHERE `name` LIKE ?");
+	if(*stmt)
+	{
+		if(auto opt = stmt->bind(table_name).evaluateByRow())
+		{
+			result = opt.value()[0].asString();
+		}
+	}
+	return result;
+}
+
+SQLiteCode::Enum SQLite::dropTable(const std::string& table_name)
+{
+	return execute("DROP TABLE IF EXISTS`" + table_name + "`;");
 }
 
 }

@@ -1,7 +1,7 @@
 CC = gcc-8
 CC_FLAGS = -O3 -Wall
 CXX = g++-8
-CXX_FLAGS = -O3 -Wall -std=c++17 -isystem ./third-party
+CXX_FLAGS = -O3 -Wall -Wextra -Wshadow -std=c++17 -isystem ./third-party
 LD_FLAGS = -lpthread -ldl
 NAME = sqlite_wrapper
 SOURCE_DIR = ./src
