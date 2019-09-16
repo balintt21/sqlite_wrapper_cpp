@@ -50,10 +50,18 @@ namespace database
 	public:
 		static constexpr int32_t NEXT_INDEX = 0;
 		static SQLiteStmt_sptr makeShared(int error_code, sqlite3_stmt* stmt);
+		SQLiteStatement(const SQLiteStatement& other) = delete;
+		SQLiteStatement(SQLiteStatement&& other) = delete;
 		~SQLiteStatement();
+		/**
+		 * Returns the actual error code
+		 */
 		inline SQLiteCode::Enum errorCode() const { return mErrorCode; }
 		inline bool valid() const { return errorCode() == SQLiteCode::OK; }
 		explicit operator bool() const noexcept { return valid(); }
+		/**
+		 * Returns the native statement handler
+		 */
 		sqlite3_stmt* native() const; 
 		/**
 		 * Evaluates statement by one row
@@ -68,6 +76,10 @@ namespace database
 		 * Evaluates statement and calls the given callback for each time a row is available
 		 */
 		void evaluate(const std::function<bool (SQLiteRow&)>& on_row_fetched);
+		/**
+		 * Execute statement without fetching results
+		 */
+		SQLiteCode::Enum execute();
 		/**
 		 * Bind functions for adding/changing data to/of the prepared statement
 		 */

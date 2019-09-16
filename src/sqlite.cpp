@@ -71,12 +71,18 @@ std::optional<SQLiteRow> SQLiteStatement::step()
 	if(mIsEvaluated) 
 	{ 
 		sqlite3_reset(mStatement);
-		sqlite3_clear_bindings(mStatement);
 		mNextIndex = 1;
+		mIsEvaluated = false;
 	}
 	auto error_code = static_cast<SQLiteCode::Enum>(sqlite3_step(mStatement));
 	if(error_code != SQLiteCode::ROW)
-	{ mIsEvaluated = true; }
+	{ 
+		sqlite3_clear_bindings(mStatement);
+		mIsEvaluated = true;
+		mErrorCode = (error_code == SQLiteCode::DONE) ? SQLiteCode::OK : error_code;
+	} else {
+		mErrorCode = SQLiteCode::OK;
+	}
 	return (error_code == SQLiteCode::ROW) ? std::make_optional<SQLiteRow>(shared_from_this()) : std::nullopt;
 }
 
@@ -89,6 +95,16 @@ void SQLiteStatement::evaluate(const std::function<bool (SQLiteRow&)>& on_row_fe
 			on_row_fetched(opt.value());
 		}
 	}
+}
+
+SQLiteCode::Enum SQLiteStatement::execute()
+{
+	auto error_code = static_cast<SQLiteCode::Enum>(sqlite3_step(mStatement));
+	mNextIndex = 1;
+	mIsEvaluated = false;
+	sqlite3_reset(mStatement);
+	sqlite3_clear_bindings(mStatement);
+	return error_code;
 }
 
 SQLiteStatement& SQLiteStatement::bind(double value, int32_t index) 
@@ -126,7 +142,7 @@ SQLiteStatement& SQLiteStatement::bind(const std::string& value, int32_t index)
 	if(mStatement != nullptr)
 	{
 		if(index == NEXT_INDEX) { index = mNextIndex++; }
-		mErrorCode = static_cast<SQLiteCode::Enum>(sqlite3_bind_text(mStatement, index, value.c_str(), value.size()+1, SQLITE_TRANSIENT)); 
+		mErrorCode = static_cast<SQLiteCode::Enum>(sqlite3_bind_text(mStatement, index, value.c_str(), value.size(), SQLITE_TRANSIENT)); 
 	}
 	return *this; 
 }
