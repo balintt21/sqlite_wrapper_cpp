@@ -75,13 +75,11 @@ std::optional<SQLiteRow> SQLiteStatement::step()
 		mIsEvaluated = false;
 	}
 	auto error_code = static_cast<SQLiteCode::Enum>(sqlite3_step(mStatement));
+	mErrorCode = SQLiteCode::OK;
 	if(error_code != SQLiteCode::ROW)
 	{ 
-		sqlite3_clear_bindings(mStatement);
 		mIsEvaluated = true;
 		mErrorCode = (error_code == SQLiteCode::DONE) ? SQLiteCode::OK : error_code;
-	} else {
-		mErrorCode = SQLiteCode::OK;
 	}
 	return (error_code == SQLiteCode::ROW) ? std::make_optional<SQLiteRow>(shared_from_this()) : std::nullopt;
 }
@@ -92,7 +90,12 @@ void SQLiteStatement::evaluate(const std::function<bool (SQLiteRow&)>& on_row_fe
 	{
 		while(auto opt = step())
 		{
-			on_row_fetched(opt.value());
+			if( !on_row_fetched(opt.value()) ) 
+			{
+				mIsEvaluated = true; 
+				mErrorCode = SQLiteCode::OK;
+				break; 
+			}
 		}
 	}
 }
@@ -103,7 +106,6 @@ SQLiteCode::Enum SQLiteStatement::execute()
 	mNextIndex = 1;
 	mIsEvaluated = false;
 	sqlite3_reset(mStatement);
-	sqlite3_clear_bindings(mStatement);
 	return error_code;
 }
 
