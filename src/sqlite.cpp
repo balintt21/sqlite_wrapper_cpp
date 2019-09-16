@@ -1,8 +1,32 @@
 #include "sqlite.h"
 #include <sqlite3.h>
+#include <regex.h>
 
 namespace database
 {
+
+static void sqlite_regexp(sqlite3_context* context, int argc, sqlite3_value** values) {
+    int ret;
+    regex_t regex;
+    char* reg = (char*)sqlite3_value_text(values[0]);
+    char* text = (char*)sqlite3_value_text(values[1]);
+
+    if ( argc != 2 || reg == 0 || text == 0) {
+        sqlite3_result_error(context, "SQL function regexp() called with invalid arguments.\n", -1);
+        return;
+    }
+
+    ret = regcomp(&regex, reg, REG_EXTENDED | REG_NOSUB);
+    if ( ret != 0 ) {
+        sqlite3_result_error(context, "error compiling regular expression", -1);
+        return;
+    }
+
+    ret = regexec(&regex, text , 0, NULL, 0);
+    regfree(&regex);
+
+    sqlite3_result_int(context, (ret != REG_NOMATCH));
+}
 
 SQLiteColumn::SQLiteColumn(const SQLiteStmt_sptr& stmt, int32_t col) : mStatement(stmt), mCol(col) {}
 
@@ -197,7 +221,12 @@ SQLiteStatement& SQLiteStatement::bindNull(const std::string& name)
 SQLite::SQLite(const std::string& path)
 	: mHandle(nullptr)
 	, mErrorCode(static_cast<SQLiteCode::Enum>(sqlite3_open(path.c_str(), &mHandle)))
-{}
+{
+	if(isOpen())
+	{
+		sqlite3_create_function(mHandle, "regexp", 2, SQLITE_ANY,0, &sqlite_regexp,0,0);
+	}
+}
 
 SQLite::~SQLite()
 {
